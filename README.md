@@ -86,11 +86,10 @@ itself and its WAL sidecars; symlinks are never followed.
   `sqlite-vec-go-bindings@v0.1.6`, which requires `ncruces/go-sqlite3@v0.21.x`
   and the wazero threads feature (enabled at init). Don't bump the driver
   without re-running the spike test (`go test ./internal/store -run TestSpike`).
-- **Windows is currently unsupported**: the sqlite-vec WASM build crashes
-  with an out-of-bounds memory access under this driver/wazero combination
-  on Windows (upstream issue in the bindings). macOS and Linux are fully
-  supported and CI-verified; the Windows CI job is advisory until the
-  bindings ship a fixed build.
+- **wazero must stay ≥ v1.11**: the sqlite-vec WASM uses atomics, and
+  wazero v1.8's experimental threads implementation crashed intermittently
+  (`out of bounds memory access`) under load. All three OSes are
+  CI-verified on the pinned combination.
 
 ## Development
 

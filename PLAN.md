@@ -101,7 +101,7 @@ A local-first POC that demonstrates the Go + HTMX + SQLite thesis with the stack
 ## Risks / open questions
 
 - **sqlite-vec + ncruces on all three CI OSes** — resolved by the blocking spike (first commit) rather than assumed; failure = explicit plan revision.
-  - *Spike outcome*: bindings v0.1.6 require ncruces **v0.21.x** (not the v0.17.1 their go.mod declares, and not ≥v0.33 which drops `sqlite3.Binary`) plus the wazero **threads** core feature enabled via a custom `RuntimeConfig`. Pinned: ncruces v0.21.3 + wazero v1.8.2 (v0.21.3's minimum — no downgrade room). macOS + Linux pass; **Windows fails inside the sqlite-vec wasm** (`out of bounds memory access`, upstream bug with no pin escape). Scope adjusted per this contract: Windows CI is advisory (`continue-on-error`), limitation documented in README; revisit when the bindings ship a fixed wasm.
+  - *Spike outcome*: bindings v0.1.6 require ncruces **v0.21.x** (not the v0.17.1 their go.mod declares, and not ≥v0.33 which drops `sqlite3.Binary`) plus the wazero **threads** core feature enabled via a custom `RuntimeConfig`. Pinned: ncruces v0.21.3 + **wazero v1.11.0** — v1.8.2 (ncruces' minimum) has an experimental-threads race that crashed the wasm intermittently on CI runners (`out of bounds memory access`, first blamed on Windows, then reproduced on ubuntu); v1.11's hardened threads implementation fixed it on **all three OSes**, Windows included. Full matrix required and green.
 - **RDSEC gateway streaming quirks** — non-streamed fallback flag if SSE proxying misbehaves.
 - **Windows CI with wazero** — new territory vs modernc; CI matrix is the guard.
 - **Embedding dims are corpus-fixed** — switching embed models means re-ingesting into a fresh db; enforced + documented.

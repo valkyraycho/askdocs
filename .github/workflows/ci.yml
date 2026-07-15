@@ -11,9 +11,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    # windows is advisory: the sqlite-vec wasm build (bindings v0.1.6) crashes
-    # with "out of bounds memory access" there — upstream issue, see README
-    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     env:
       CGO_ENABLED: "0"
     steps:
