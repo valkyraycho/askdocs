@@ -62,6 +62,10 @@ deleting a file.
 Re-running `ingest` is incremental: files are hashed, unchanged files cost
 nothing, changed files are re-embedded, deleted files are pruned.
 
+Files whose names start with the corpus database's name (e.g.
+`askdocs.db-anything.md`) are skipped by the walker along with the database
+itself and its WAL sidecars; symlinks are never followed.
+
 ## Honest notes
 
 - **Your documents leave the machine at ingest time** — chunks are sent to

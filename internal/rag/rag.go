@@ -29,11 +29,28 @@ func BuildPrompt(question string, hits []store.Hit) (system, user string) {
 	return systemPrompt, b.String()
 }
 
-var citationRe = regexp.MustCompile(`\[(\d{1,2})\]`)
+var (
+	citationRe = regexp.MustCompile(`\[(\d{1,2})\]`)
+	codeSpanRe = regexp.MustCompile(`(?s)<pre.*?</pre>|<code.*?</code>`)
+)
 
 // LinkCitations replaces valid [n] citations in rendered answer HTML with
 // links to the cited chunk; out-of-range citations stay as plain text.
+// Code spans are left untouched — `items[1]` in a code sample is array
+// indexing, not a citation.
 func LinkCitations(html string, hits []store.Hit) string {
+	var out strings.Builder
+	last := 0
+	for _, span := range codeSpanRe.FindAllStringIndex(html, -1) {
+		out.WriteString(linkProse(html[last:span[0]], hits))
+		out.WriteString(html[span[0]:span[1]])
+		last = span[1]
+	}
+	out.WriteString(linkProse(html[last:], hits))
+	return out.String()
+}
+
+func linkProse(html string, hits []store.Hit) string {
 	return citationRe.ReplaceAllStringFunc(html, func(m string) string {
 		n, err := strconv.Atoi(citationRe.FindStringSubmatch(m)[1])
 		if err != nil || n < 1 || n > len(hits) {

@@ -325,6 +325,31 @@ func TestIngestSkipsCorpusDBFiles(t *testing.T) {
 	}
 }
 
+func TestIngestSkipsSymlinkedFiles(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation needs privileges on windows")
+	}
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "secret.md"), []byte("# S\n\nsecret content outside root\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	writeTree(t, root, map[string]string{"real.md": "# R\n\nreal content\n"})
+	if err := os.Symlink(filepath.Join(outside, "secret.md"), filepath.Join(root, "sneaky.md")); err != nil {
+		t.Fatalf("symlink: %v", err)
+	}
+	st := openStore(t, filepath.Join(root, "askdocs.db"))
+	emb := &fakeEmbedder{}
+	if _, err := Run(context.Background(), st, emb, testOpts(root)); err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	for _, text := range emb.embeddedTexts() {
+		if strings.Contains(text, "secret") {
+			t.Errorf("symlinked content left the corpus root: %q", text)
+		}
+	}
+}
+
 func TestIngestWalkErrorSkipsPrune(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("chmod-based unreadable dir is unix-only")

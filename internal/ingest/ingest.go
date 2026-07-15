@@ -166,6 +166,10 @@ func Run(ctx context.Context, st *store.Store, client EmbedClient, opts Options)
 }
 
 func runPipeline(ctx context.Context, st *store.Store, client EmbedClient, opts Options, jobs []job) (embedded, failed int) {
+	// a fatal embedding-space error makes every pending job unwritable —
+	// cancel so in-flight workers stop spending on embeddings
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	jobCh := make(chan job)
 	resultCh := make(chan fileResult)
 
@@ -212,6 +216,7 @@ func runPipeline(ctx context.Context, st *store.Store, client EmbedClient, opts 
 			if err := st.EnsureSpace(space, opts.AllowProviderMismatch); err != nil {
 				opts.Logf("askdocs: stage=space error=%v", err)
 				failures.Store(res.rel, err)
+				cancel()
 				continue
 			}
 			spaceReady = true
@@ -261,6 +266,9 @@ func walk(root, dbPath string) ([]string, error) {
 				return filepath.SkipDir
 			}
 			return nil
+		}
+		if !d.Type().IsRegular() {
+			return nil // symlinks could smuggle content from outside the corpus root into the egress
 		}
 		if strings.HasPrefix(name, ".") || strings.HasPrefix(name, dbBase) {
 			return nil

@@ -199,6 +199,7 @@ func (c *Client) doWithRetry(ctx context.Context, path string, payload []byte) (
 			req.Header.Set("Authorization", "Bearer "+c.cfg.APIKey)
 		}
 
+		var serverWait time.Duration
 		resp, err := c.hc.Do(req)
 		if err != nil {
 			lastErr = fmt.Errorf("call %s: %w", path, err)
@@ -211,19 +212,18 @@ func (c *Client) doWithRetry(ctx context.Context, path string, payload []byte) (
 			if !retryable(resp.StatusCode) {
 				return nil, lastErr
 			}
-			if wait := retryAfter(resp.Header.Get("Retry-After")); wait > 0 {
-				if !sleepCtx(ctx, wait) {
-					return nil, ctx.Err()
-				}
-				continue
-			}
+			serverWait = retryAfter(resp.Header.Get("Retry-After"))
 		}
-		if attempt < maxAttempts {
+		if attempt == maxAttempts {
+			break // no sleep before giving up
+		}
+		wait := serverWait
+		if wait == 0 {
 			backoff := baseBackoff * (1 << (attempt - 1))
-			jitter := time.Duration(rand.Int63n(int64(backoff) / 2))
-			if !sleepCtx(ctx, backoff+jitter) {
-				return nil, ctx.Err()
-			}
+			wait = backoff + time.Duration(rand.Int63n(int64(backoff)/2))
+		}
+		if !sleepCtx(ctx, wait) {
+			return nil, ctx.Err()
 		}
 	}
 	return nil, fmt.Errorf("after %d attempts: %w", maxAttempts, lastErr)

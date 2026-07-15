@@ -143,25 +143,10 @@ func (s *Store) DeleteFiles(paths []string) error {
 }
 
 func deleteFileRows(tx *sql.Tx, path string) error {
-	rows, err := tx.Query("SELECT id FROM chunks WHERE path = ?", path)
+	ids, err := chunkIDs(tx, path)
 	if err != nil {
-		return fmt.Errorf("list chunks of %s: %w", path, err)
+		return err
 	}
-	var ids []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			rows.Close()
-			return fmt.Errorf("scan chunk id of %s: %w", path, err)
-		}
-		ids = append(ids, id)
-	}
-	if err := rows.Err(); err != nil {
-		rows.Close()
-		return fmt.Errorf("chunk id rows of %s: %w", path, err)
-	}
-	rows.Close()
-
 	hasVec := tableExists(tx, "chunks_vec")
 	for _, id := range ids {
 		if _, err := tx.Exec("DELETE FROM chunks_fts WHERE rowid = ?", id); err != nil {
@@ -180,6 +165,27 @@ func deleteFileRows(tx *sql.Tx, path string) error {
 		return fmt.Errorf("delete file %s: %w", path, err)
 	}
 	return nil
+}
+
+func chunkIDs(tx *sql.Tx, path string) ([]int64, error) {
+	rows, err := tx.Query("SELECT id FROM chunks WHERE path = ?", path)
+	if err != nil {
+		return nil, fmt.Errorf("list chunks of %s: %w", path, err)
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan chunk id of %s: %w", path, err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("chunk id rows of %s: %w", path, err)
+	}
+	return ids, nil
 }
 
 func tableExists(tx *sql.Tx, name string) bool {

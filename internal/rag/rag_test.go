@@ -39,3 +39,19 @@ func TestLinkCitations(t *testing.T) {
 		t.Errorf("out-of-range citations were linked: %s", out)
 	}
 }
+
+func TestLinkCitationsLeavesCodeSpansAlone(t *testing.T) {
+	hits := []store.Hit{hit(42, "a", "x")}
+	in := `<p>see [1] and <code>items[1]</code></p><pre><code>data[1] = "x"
+arr[1]++</code></pre><p>also [1]</p>`
+	out := LinkCitations(in, hits)
+	if strings.Count(out, `class="cite"`) != 2 {
+		t.Errorf("expected exactly 2 prose citations linked, got: %s", out)
+	}
+	if !strings.Contains(out, "<code>items[1]</code>") {
+		t.Errorf("inline code index rewritten: %s", out)
+	}
+	if !strings.Contains(out, `data[1] = "x"`) {
+		t.Errorf("code block index rewritten: %s", out)
+	}
+}
