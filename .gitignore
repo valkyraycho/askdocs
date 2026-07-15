@@ -1,0 +1,7 @@
+askdocs
+askdocs.exe
+*.db
+*.db-wal
+*.db-shm
+*.db.lock
+coverage.out
