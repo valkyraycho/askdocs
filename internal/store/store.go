@@ -168,7 +168,11 @@ func isBusy(err error) bool {
 	if errors.As(err, &serr) && serr.Code() == sqlite3.BUSY {
 		return true
 	}
-	// connection-setup pragma failures reach us flattened into strings
+	// Connection-setup pragma failures reach us flattened into strings.
+	// "database is locked" is the literal BUSY message in the pinned driver
+	// (ncruces v0.21.3 internal/util/error.go) and SQLite's own canonical
+	// text for SQLITE_BUSY — re-verify there if the driver is ever bumped,
+	// or retryBusy silently degrades to fail-on-first-busy.
 	return err != nil && strings.Contains(err.Error(), "database is locked")
 }
 
