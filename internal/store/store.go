@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ncruces/go-sqlite3"
@@ -49,20 +50,27 @@ type Store struct {
 }
 
 func OpenIngest(path string) (*Store, error) {
+	// journal_mode is deliberately NOT a connection pragma: converting a
+	// fresh database to WAL takes an exclusive lock, and concurrent first
+	// opens would fail at connection setup (seen on linux CI). WAL is
+	// persistent, so a retried one-time conversion below is enough.
 	dsn := "file:" + path +
 		"?_txlock=immediate" +
 		"&_pragma=busy_timeout(5000)" +
-		"&_pragma=foreign_keys(1)" +
-		"&_pragma=journal_mode(WAL)"
+		"&_pragma=foreign_keys(1)"
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
-	if err := smokeTestVec(db); err != nil {
+	if err := retryBusy(func() error { return smokeTestVec(db) }); err != nil {
 		db.Close()
 		return nil, err
 	}
 	if err := migrate(db); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err := retryBusy(func() error { return ensureWAL(db) }); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -71,6 +79,17 @@ func OpenIngest(path string) (*Store, error) {
 		return nil, fmt.Errorf("restrict database permissions: %w", err)
 	}
 	return &Store{db: db, writable: true}, nil
+}
+
+func ensureWAL(db *sql.DB) error {
+	var mode string
+	if err := db.QueryRow("PRAGMA journal_mode=WAL").Scan(&mode); err != nil {
+		return fmt.Errorf("enable WAL: %w", err)
+	}
+	if mode != "wal" {
+		return fmt.Errorf("journal mode is %q, want wal", mode)
+	}
+	return nil
 }
 
 func OpenReadOnly(path string) (*Store, error) {
@@ -82,7 +101,7 @@ func OpenReadOnly(path string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
-	if err := smokeTestVec(db); err != nil {
+	if err := retryBusy(func() error { return smokeTestVec(db) }); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -130,9 +149,13 @@ func verify(db *sql.DB, path string) error {
 }
 
 func migrate(db *sql.DB) error {
+	return retryBusy(func() error { return migrateOnce(db) })
+}
+
+func retryBusy(op func() error) error {
 	deadline := time.Now().Add(migrateRetryWindow)
 	for {
-		err := migrateOnce(db)
+		err := op()
 		if err == nil || !isBusy(err) || time.Now().After(deadline) {
 			return err
 		}
@@ -142,7 +165,11 @@ func migrate(db *sql.DB) error {
 
 func isBusy(err error) bool {
 	var serr *sqlite3.Error
-	return errors.As(err, &serr) && serr.Code() == sqlite3.BUSY
+	if errors.As(err, &serr) && serr.Code() == sqlite3.BUSY {
+		return true
+	}
+	// connection-setup pragma failures reach us flattened into strings
+	return err != nil && strings.Contains(err.Error(), "database is locked")
 }
 
 func migrateOnce(db *sql.DB) error {
