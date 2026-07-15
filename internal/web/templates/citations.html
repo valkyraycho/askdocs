@@ -1,0 +1,5 @@
+{{if .}}
+<ol class="cite-list">
+  {{range .}}<li><a href="/chunks/{{.ID}}" hx-get="/chunks/{{.ID}}" hx-target="#detail" hx-swap="innerHTML">{{.Heading}}</a></li>{{end}}
+</ol>
+{{end}}

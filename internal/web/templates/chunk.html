@@ -1,0 +1,10 @@
+<article class="chunk">
+  <header>
+    <span class="heading">{{.Chunk.Heading}}</span>
+    <span class="nav">
+      {{if .PrevID}}<button hx-get="/chunks/{{.PrevID}}" hx-target="#detail" hx-swap="innerHTML">← prev</button>{{end}}
+      {{if .NextID}}<button hx-get="/chunks/{{.NextID}}" hx-target="#detail" hx-swap="innerHTML">next →</button>{{end}}
+    </span>
+  </header>
+  <div class="body">{{.HTML}}</div>
+</article>

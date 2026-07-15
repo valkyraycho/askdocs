@@ -344,6 +344,22 @@ func TestCheckpointOnWritableClose(t *testing.T) {
 	}
 }
 
+func TestFilesListing(t *testing.T) {
+	s, _ := newEmbeddedStore(t)
+	mustReplace(t, s, "b.md", "h2", ChunkInput{Heading: "b", Content: "one", Vec: vec(1, 0, 0, 0)})
+	mustReplace(t, s, "a.md", "h1",
+		ChunkInput{Heading: "a1", Content: "two", Vec: vec(0, 1, 0, 0)},
+		ChunkInput{Heading: "a2", Content: "three", Vec: vec(0, 0, 1, 0)})
+
+	files, err := s.Files()
+	if err != nil {
+		t.Fatalf("Files: %v", err)
+	}
+	if len(files) != 2 || files[0].Path != "a.md" || files[0].Chunks != 2 || files[1].Chunks != 1 {
+		t.Errorf("Files = %+v", files)
+	}
+}
+
 func TestStats(t *testing.T) {
 	s, _ := newEmbeddedStore(t)
 	mustReplace(t, s, "a.md", "h1",

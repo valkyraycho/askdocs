@@ -1,0 +1,8 @@
+<div class="ask-panel done">
+  <div class="citations">{{template "citations.html" .Hits}}</div>
+  {{if .Message}}
+  <p class="ask-error">{{.Message}}</p>
+  {{else}}
+  <div class="answer">{{.Answer}}</div>
+  {{end}}
+</div>

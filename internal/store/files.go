@@ -21,6 +21,35 @@ type ChunkInput struct {
 	Vec     []float32
 }
 
+type FileInfo struct {
+	Path   string
+	Chunks int
+}
+
+func (s *Store) Files() ([]FileInfo, error) {
+	rows, err := s.db.Query(
+		`SELECT f.path, count(c.id) FROM files f
+		 LEFT JOIN chunks c ON c.path = f.path
+		 GROUP BY f.path ORDER BY f.path`)
+	if err != nil {
+		return nil, fmt.Errorf("list files: %w", err)
+	}
+	defer rows.Close()
+
+	var files []FileInfo
+	for rows.Next() {
+		var f FileInfo
+		if err := rows.Scan(&f.Path, &f.Chunks); err != nil {
+			return nil, fmt.Errorf("scan file info: %w", err)
+		}
+		files = append(files, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("file info rows: %w", err)
+	}
+	return files, nil
+}
+
 func (s *Store) FileHashes() (map[string]string, error) {
 	rows, err := s.db.Query("SELECT path, hash FROM files")
 	if err != nil {

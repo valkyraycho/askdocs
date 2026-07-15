@@ -1,0 +1,11 @@
+{{if .Hits}}
+<p class="label">{{.Label}}</p>
+{{range .Hits}}
+<div class="hit" hx-get="/chunks/{{.ID}}" hx-target="#detail" hx-swap="innerHTML">
+  <span class="heading">{{.Heading}}</span>
+  <span class="snippet">{{snippet .Content}}</span>
+</div>
+{{end}}
+{{else}}
+<p class="empty">{{.Empty}}</p>
+{{end}}

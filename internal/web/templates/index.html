@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>askdocs — {{.Name}}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/htmx.min.js" defer></script>
+  <script src="/static/sse.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>askdocs<span class="cursor"></span></h1>
+    <p class="statline">{{.Name}} · {{.Stats.Files}} files · {{.Stats.Chunks}} chunks{{with .Stats.Space}} · {{.Model}} ({{.Dims}}d) via {{.Host}}{{end}}</p>
+  </header>
+
+  <section class="ask">
+    <form hx-get="/ask/connect" hx-target="#ask-slot" hx-swap="innerHTML">
+      <span class="prompt">?</span>
+      <input name="q" placeholder="ask the docs…" autocomplete="off" maxlength="512" required>
+      <button type="submit">ask</button>
+    </form>
+    <div id="ask-slot"></div>
+  </section>
+
+  <section class="find">
+    <form hx-get="/hybrid" hx-target="#results" hx-swap="innerHTML">
+      <span class="prompt">&gt;</span>
+      <input type="search" name="q" placeholder="search… (live: keyword · enter: hybrid)" autocomplete="off" autofocus
+             hx-get="/search" hx-trigger="keyup changed delay:300ms" hx-target="#results" hx-swap="innerHTML">
+    </form>
+    <div id="results">
+      {{if .Files}}
+      <table class="files">
+        {{range .Files}}<tr><td>{{.Path}}</td><td class="num">{{.Chunks}} chunks</td></tr>{{end}}
+      </table>
+      {{else}}
+      <p class="empty">empty corpus — run <code>askdocs ingest &lt;path&gt;</code></p>
+      {{end}}
+    </div>
+  </section>
+  <div id="detail"></div>
+</body>
+</html>
