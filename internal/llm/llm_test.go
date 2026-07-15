@@ -50,6 +50,14 @@ func TestConfigFromEnv(t *testing.T) {
 	}
 }
 
+func TestClientAccessors(t *testing.T) {
+	cfg := testConfig("https://api.example.com/v1")
+	c := New(cfg)
+	if c.Host() != "api.example.com" || c.EmbedModel() != "fake-embed" {
+		t.Errorf("accessors: %q %q", c.Host(), c.EmbedModel())
+	}
+}
+
 func TestConfigHost(t *testing.T) {
 	t.Setenv("OPENAI_BASE_URL", "https://api.rdsec.example.com/prod/aiendpoint/v1")
 	t.Setenv("OPENAI_API_KEY", "sk-x")

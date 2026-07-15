@@ -344,6 +344,39 @@ func TestCheckpointOnWritableClose(t *testing.T) {
 	}
 }
 
+func TestMetaStringRoundtrip(t *testing.T) {
+	s, path := newIngestStore(t)
+	if _, err := s.MetaString("nope"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("missing key = %v, want ErrNotFound", err)
+	}
+	if err := s.SetMetaString("corpus_root", "/some/root"); err != nil {
+		t.Fatalf("SetMetaString: %v", err)
+	}
+	if got, err := s.MetaString("corpus_root"); err != nil || got != "/some/root" {
+		t.Errorf("MetaString = %q, %v", got, err)
+	}
+	s.Close()
+
+	ro, err := OpenReadOnly(path)
+	if err != nil {
+		t.Fatalf("OpenReadOnly: %v", err)
+	}
+	defer ro.Close()
+	if err := ro.SetMetaString("x", "y"); err == nil {
+		t.Errorf("SetMetaString on read-only store succeeded")
+	}
+}
+
+func TestSearchLimitClamped(t *testing.T) {
+	s, _ := newIngestStore(t)
+	mustReplace(t, s, "a.md", "h", ChunkInput{Heading: "a", Content: "clamp target"})
+	for _, limit := range []int{-5, 0, 999} {
+		if _, err := s.SearchFTS("clamp", limit); err != nil {
+			t.Errorf("SearchFTS(limit=%d): %v", limit, err)
+		}
+	}
+}
+
 func TestFilesListing(t *testing.T) {
 	s, _ := newEmbeddedStore(t)
 	mustReplace(t, s, "b.md", "h2", ChunkInput{Heading: "b", Content: "one", Vec: vec(1, 0, 0, 0)})
