@@ -82,6 +82,11 @@ nothing, changed files are re-embedded, deleted files are pruned.
   `sqlite-vec-go-bindings@v0.1.6`, which requires `ncruces/go-sqlite3@v0.21.x`
   and the wazero threads feature (enabled at init). Don't bump the driver
   without re-running the spike test (`go test ./internal/store -run TestSpike`).
+- **Windows is currently unsupported**: the sqlite-vec WASM build crashes
+  with an out-of-bounds memory access under this driver/wazero combination
+  on Windows (upstream issue in the bindings). macOS and Linux are fully
+  supported and CI-verified; the Windows CI job is advisory until the
+  bindings ship a fixed build.
 
 ## Development
 
