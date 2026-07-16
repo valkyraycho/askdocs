@@ -81,6 +81,8 @@ button:hover { background: var(--accent); color: var(--bg); }
 
 .files { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
 .files td { padding: 0.35rem 0.3rem; border-bottom: 1px solid var(--rule); font-size: 0.82rem; }
+.file-row { cursor: pointer; }
+.file-row:hover td { background: var(--panel); color: var(--accent); }
 .files .num { text-align: right; color: var(--muted); }
 
 .chunk { border: 1px solid var(--rule); background: var(--panel); padding: 1rem 1.2rem; margin-top: 1.2rem; }

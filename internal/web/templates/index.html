@@ -32,7 +32,8 @@
     <div id="results">
       {{if .Files}}
       <table class="files">
-        {{range .Files}}<tr><td>{{.Path}}</td><td class="num">{{.Chunks}} chunks</td></tr>{{end}}
+        {{range .Files}}<tr class="file-row" hx-get="/file?path={{.Path | urlquery}}"
+          hx-target="#detail" hx-swap="innerHTML show:#detail:top"><td>{{.Path}}</td><td class="num">{{.Chunks}} chunks</td></tr>{{end}}
       </table>
       {{else}}
       <p class="empty">empty corpus — run <code>askdocs ingest &lt;path&gt;</code></p>

@@ -174,6 +174,27 @@ func TestChunkDetailAndNeighbors(t *testing.T) {
 	}
 }
 
+func TestFileChunkList(t *testing.T) {
+	h := handlerWith(t, &fakeLLM{})
+	body := get(t, h, "/file?path=guide.md", nil).Body.String()
+	if !strings.Contains(body, "guide.md · 2 chunks") {
+		t.Errorf("file header missing: %q", body)
+	}
+	if strings.Count(body, `class="hit"`) != 2 {
+		t.Errorf("expected 2 chunk rows: %q", body)
+	}
+	if code := get(t, h, "/file?path=nope.md", nil).Code; code != http.StatusNotFound {
+		t.Errorf("missing file → %d, want 404", code)
+	}
+}
+
+func TestIndexFileRowsAreClickable(t *testing.T) {
+	body := get(t, handlerWith(t, &fakeLLM{}), "/", nil).Body.String()
+	if !strings.Contains(body, `hx-get="/file?path=guide.md"`) {
+		t.Errorf("file rows not wired to /file: %q", body)
+	}
+}
+
 func TestAskConnect(t *testing.T) {
 	h := handlerWith(t, &fakeLLM{})
 	body := get(t, h, "/ask/connect?q=how+to+retry", nil).Body.String()

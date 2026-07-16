@@ -1,0 +1,11 @@
+<article class="chunk">
+  <header>
+    <span class="heading">{{.Path}} · {{len .Chunks}} chunks</span>
+  </header>
+  {{range .Chunks}}
+  <div class="hit" hx-get="/chunks/{{.ID}}" hx-target="#detail" hx-swap="innerHTML show:#detail:top">
+    <span class="heading">{{.Heading}}</span>
+    <span class="snippet">{{snippet .Content}}</span>
+  </div>
+  {{end}}
+</article>

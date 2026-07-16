@@ -63,6 +63,7 @@ func New(st Corpus, llmClient LLM, port int, corpusName string) http.Handler {
 	mux.HandleFunc("GET /search", s.search)
 	mux.HandleFunc("GET /hybrid", s.hybrid)
 	mux.HandleFunc("GET /chunks/{id}", s.chunk)
+	mux.HandleFunc("GET /file", s.file)
 	mux.HandleFunc("GET /ask/connect", s.askConnect)
 	mux.HandleFunc("GET /ask/stream", s.askStream)
 	mux.Handle("GET /static/", http.FileServerFS(assets))

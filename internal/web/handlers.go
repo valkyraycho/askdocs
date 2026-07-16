@@ -104,6 +104,25 @@ func (s *server) hybrid(w http.ResponseWriter, r *http.Request) {
 	s.render(w, "results.html", resultsData{Label: "hybrid", Hits: hits, Empty: "no matches"})
 }
 
+type fileData struct {
+	Path   string
+	Chunks []store.Chunk
+}
+
+func (s *server) file(w http.ResponseWriter, r *http.Request) {
+	path := r.FormValue("path")
+	chunks, err := s.store.FileChunks(path)
+	if err != nil {
+		s.fail(w, err)
+		return
+	}
+	if len(chunks) == 0 {
+		http.Error(w, "file not in corpus", http.StatusNotFound)
+		return
+	}
+	s.render(w, "file.html", fileData{Path: path, Chunks: chunks})
+}
+
 func (s *server) chunk(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {

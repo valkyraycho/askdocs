@@ -2,6 +2,7 @@
   <header>
     <span class="heading">{{.Chunk.Heading}}</span>
     <span class="nav">
+      <button hx-get="/file?path={{.Chunk.Path | urlquery}}" hx-target="#detail" hx-swap="innerHTML">file</button>
       {{if .PrevID}}<button hx-get="/chunks/{{.PrevID}}" hx-target="#detail" hx-swap="innerHTML">← prev</button>{{end}}
       {{if .NextID}}<button hx-get="/chunks/{{.NextID}}" hx-target="#detail" hx-swap="innerHTML">next →</button>{{end}}
     </span>
